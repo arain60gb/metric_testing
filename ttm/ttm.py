@@ -459,6 +459,7 @@ class MusicGenerationService(AIModelService):
         print("Random Sample from Dataset:")
         for key, value in self.random_sample.items():
             print(f"{key}: {value}")
+            bt.logging.info(f"🔊 This is the audio prompt: {value}")
         
         # Checking if 'File_Path' is a dictionary containing 'array' and 'sampling_rate' keys
         if 'File_Path' in self.random_sample and isinstance(self.random_sample['File_Path'], dict):
@@ -473,7 +474,7 @@ class MusicGenerationService(AIModelService):
                 sf.write(audio_path, audio_array, sample_rate)
                 print(f"Audio saved at: {audio_path}")
 
-                return audio_path
+                return value
             else:
                 print("Invalid audio data in 'File_Path'. Expected 'array' and 'sampling_rate'.")
                 return None
