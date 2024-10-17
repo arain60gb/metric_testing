@@ -294,6 +294,7 @@ class MusicGenerationService(AIModelService):
     
         except Exception as e:
             bt.logging.error(f"Error processing Music output: {e}")
+            raise  # Re-raise the exception to get the full traceback
 
     def get_duration(self, wav_file_path):
         """Returns the duration of the audio file in seconds."""
