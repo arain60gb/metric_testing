@@ -458,10 +458,10 @@ class MusicGenerationService(AIModelService):
         self.random_sample = dataset[random_index]
         
         # Print the structure of the sample to verify the content
-        print("Random Sample from Dataset:")
-        for key, value in self.random_sample.items():
-            print(f"{key}: {value}")
-            bt.logging.info(f"🔊 This is the audio prompt: {value}")
+        # print("Random Sample from Dataset:")
+        # for key, value in self.random_sample.items():
+        #     print(f"{key}: {value}")
+            # bt.logging.info(f"🔊 This is the audio prompt: {value}")
         
         # Checking if the prompt exists in the dataset
         if 'Prompt' in self.random_sample:
