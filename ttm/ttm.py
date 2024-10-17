@@ -51,7 +51,7 @@ class MusicGenerationService(AIModelService):
     #     self.prompts = gs_dev['train']['text']
     #     return self.prompts
 
-    def load_prompts(self,axon.hotkey = None):
+    def load_prompts(self):
     # output_dir = "audio_files"  # Directory to save the audio files
 
         # Load the dataset (you can change this to any other dataset name)
@@ -95,8 +95,7 @@ class MusicGenerationService(AIModelService):
                     audio_hash = hashlib.sha256(audio_data.numpy().tobytes()).hexdigest()
                     # Check if the music hash is a duplicate
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    axon.hotkey = None
-                    save_hash_to_file(audio_hash, axon.hotkey, timestamp)
+                    save_hash_to_file(audio_hash, timestamp)
                     bt.logging.info(f"Music hash processed and saved successfully for miner: {axon.hotkey}")                    
 
                 except Exception as e:
