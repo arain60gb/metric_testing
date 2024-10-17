@@ -125,54 +125,50 @@
 #         return aggregate_score
 
 
-from huggingface_hub import hf_hub_download
-import numpy as np
-import librosa
+import os
 import torch
 import torchaudio
-from scipy.signal import hilbert
+from huggingface_hub import hf_hub_download
 from audiocraft.metrics import CLAPTextConsistencyMetric
-import bittensor as bt
-from torch.utils.data import DataLoader
-from transformers import AutoModel, Wav2Vec2FeatureExtractor
 from audioldm_eval.datasets.load_mel import WaveDataset
 from audioldm_eval.metrics.kl import calculate_kl
 from audioldm_eval.metrics.fad import FrechetAudioDistance
-import os  # Import the os module
+from transformers import AutoModel, Wav2Vec2FeatureExtractor
+from torch.utils.data import DataLoader
 
 class MetricEvaluator:
     @staticmethod
     def calculate_kld(generated_audio_dir, target_audio_dir):
         # Sampling rate of your audio data
         orig_sampling_rate = 32000
-    
+
         # Check if generated_audio_dir is a file or directory
         if os.path.isfile(generated_audio_dir):
             generated_files = [generated_audio_dir]
         else:
             generated_files = [os.path.join(generated_audio_dir, f) for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))]
-    
+
         # Check if target_audio_dir is a file or directory
         if os.path.isfile(target_audio_dir):
             target_files = [target_audio_dir]
         else:
             target_files = [os.path.join(target_audio_dir, f) for f in os.listdir(target_audio_dir) if os.path.isfile(os.path.join(target_audio_dir, f))]
-    
+
         # Initialize datasets
         generated_dataset = WaveDataset(generated_files, orig_sampling_rate)
         target_dataset = WaveDataset(target_files, orig_sampling_rate)
-    
+
         # Use DataLoader to handle batching
         generated_loader = DataLoader(generated_dataset, batch_size=1, shuffle=False)
         target_loader = DataLoader(target_dataset, batch_size=1, shuffle=False)
-    
+
         # Load pre-trained Wav2Vec2 model and processor (MERT or any suitable model)
         model = AutoModel.from_pretrained("m-a-p/MERT-v1-95M", trust_remote_code=True)
         processor = Wav2Vec2FeatureExtractor.from_pretrained("m-a-p/MERT-v1-95M", trust_remote_code=True)
-    
+
         # Define resampler to match the model's expected sampling rate (24kHz)
         resampler = torchaudio.transforms.Resample(orig_freq=orig_sampling_rate, new_freq=24000)
-    
+
         # Function to extract features from the audio
         def extract_features(loader, model, processor, resampler):
             features_dict = {"hidden_states": [], "file_path_": []}  # Initialize with keys for the feature type (hidden_states)
@@ -181,28 +177,28 @@ class MetricEvaluator:
                 audio = resampler(audio)
                 audio = audio.squeeze(0)  # Remove batch dimension
                 audio = audio.numpy()  # Convert to NumPy array
-    
+
                 # Process and extract features
                 inputs = processor(audio, sampling_rate=24000, return_tensors="pt")
-    
+
                 # Pass the processed inputs to the model
                 outputs = model(**inputs, output_hidden_states=True)
-    
+
                 # Use the last hidden state for comparison
                 hidden_states = outputs.hidden_states[-1].mean(dim=1)  # Average over the time dimension
-    
+
                 # Store features (hidden states) and filenames
                 features_dict["hidden_states"].append(hidden_states.squeeze(0))  # Assuming batch size of 1
-    
+
                 # Unpack the filename tuple and store as string
                 features_dict["file_path_"].append(filename[0])  # Store the filename as a string
-    
+
             return features_dict
-    
+
         # Extract features for both generated and target audio
         generated_features = extract_features(generated_loader, model, processor, resampler)
         target_features = extract_features(target_loader, model, processor, resampler)
-    
+
         # Calculate KLD using the feature layer name as "hidden_states"
         kl_metrics, _, _ = calculate_kl(generated_features, target_features, feat_layer_name="hidden_states", same_name=True)
         kld = max(0, kl_metrics["kullback_leibler_divergence_sigmoid"])
@@ -215,16 +211,16 @@ class MetricEvaluator:
             generated_files = [generated_audio_dir]
         else:
             generated_files = [os.path.join(generated_audio_dir, f) for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))]
-    
+
         # Check if target_audio_dir is a file or directory
         if os.path.isfile(target_audio_dir):
             target_files = [target_audio_dir]
         else:
             target_files = [os.path.join(target_audio_dir, f) for f in os.listdir(target_audio_dir) if os.path.isfile(os.path.join(target_audio_dir, f))]
-    
+
         # Initialize the Frechet Audio Distance calculator
         fad_calculator = FrechetAudioDistance()
-    
+
         # Calculate the FAD score between the two directories
         fad_score = fad_calculator.score(
             background_dir=generated_files,  # Generated audio directory
@@ -233,14 +229,14 @@ class MetricEvaluator:
             limit_num=None,                  # Limit the number of files to process, None means no limit
             recalculate=True                 # Set to True if you want to recalculate embeddings
         )
-    
+
         # Ensure fad_score is a dictionary
         if isinstance(fad_score, dict):
             # Extract the FAD score from the dictionary
             fad_value = fad_score.get('frechet_audio_distance', 0)
         else:
             fad_value = 0
-    
+
         # Clamp the value to 0 if it's negative
         fad = max(0, fad_value)
         return fad
@@ -251,14 +247,14 @@ class MetricEvaluator:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="music_audioset_epoch_15_esc_90.14.pt")
             clap_metric = CLAPTextConsistencyMetric(pt_file, model_arch='HTSAT-base').to(device)
-    
+
             def convert_audio(audio, from_rate, to_rate, to_channels):
                 resampler = torchaudio.transforms.Resample(orig_freq=from_rate, new_freq=to_rate)
                 audio = resampler(audio)
                 if to_channels == 1:
                     audio = audio.mean(dim=0, keepdim=True)
                 return audio
-    
+
             # Check if generated_audio_dir is a file or directory
             if os.path.isfile(generated_audio_dir):
                 file_path = generated_audio_dir
@@ -268,15 +264,15 @@ class MetricEvaluator:
                 if file_name is None:
                     raise FileNotFoundError("No audio file found in the directory.")
                 file_path = os.path.join(generated_audio_dir, file_name)
-    
+
             # Load and process the audio
             audio, sr = torchaudio.load(file_path)
             audio = convert_audio(audio, from_rate=sr, to_rate=sr, to_channels=1)
-    
+
             # Calculate consistency score
             clap_metric.update(audio.unsqueeze(0), [text], torch.tensor([audio.shape[1]]), torch.tensor([sr]))
             consistency_score = clap_metric.compute()
-    
+
             return consistency_score
         except Exception as e:
             print(f"An error occurred while calculating music consistency score: {e}")
