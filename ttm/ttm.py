@@ -211,11 +211,12 @@ class MusicGenerationService(AIModelService):
     def handle_music_output(self, axon, music_output, prompt, model_name):
         try:
             import numpy as np
+            import wandb
             print(f"Python executable: {sys.executable}")
             print("Numpy imported successfully")
         except ImportError as e:
             print(f"Python executable: {sys.executable}")
-            print(f"Error importing numpy: {e}")
+            print(f"Error importing numpy or wandb: {e}")
     
         try:
             # Convert the list to a tensor
