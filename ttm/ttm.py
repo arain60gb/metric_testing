@@ -203,45 +203,52 @@ class MusicGenerationService(AIModelService):
         except Exception as e:
             bt.logging.error(f'An error occurred while handling speech output: {e}')
 
-        import sys
-    print(f"Python executable: {sys.executable}")
     
 
     
-    import torch
-    import torchaudio
-    import os
-    import hashlib
-    from datetime import datetime
-    import wandb
+
     
     def handle_music_output(self, axon, music_output, prompt, model_name):
-
         try:
             import numpy as np
+            print(f"Python executable: {sys.executable}")
             print("Numpy imported successfully")
         except ImportError as e:
+            print(f"Python executable: {sys.executable}")
             print(f"Error importing numpy: {e}")
+    
         try:
             # Convert the list to a tensor
+            print("Converting music_output to tensor")
             speech_tensor = torch.Tensor(music_output)
+            print("Tensor conversion successful")
+    
             # Normalize the speech data
+            print("Normalizing the speech data")
             audio_data = speech_tensor / torch.max(torch.abs(speech_tensor))
+            print("Normalization successful")
     
             # Convert to 32-bit PCM
+            print("Converting to 32-bit PCM")
             audio_data_int_ = (audio_data * 2147483647).type(torch.IntTensor)
+            print("Conversion to 32-bit PCM successful")
     
             # Add an extra dimension to make it a 2D tensor
+            print("Adding extra dimension to tensor")
             audio_data_int = audio_data_int_.unsqueeze(0)
+            print("Extra dimension added successfully")
     
             # Save the audio data as a .wav file
             output_path = os.path.join('/tmp', f'output_music_{axon.hotkey}.wav')
             sampling_rate = 32000
+            print(f"Saving audio data to {output_path}")
             torchaudio.save(output_path, src=audio_data_int, sample_rate=sampling_rate)
             bt.logging.info(f"Saved audio file to {output_path}")
     
             # Calculate the audio hash
+            print("Calculating audio hash")
             audio_hash = hashlib.sha256(audio_data.numpy().tobytes()).hexdigest()
+            print("Audio hash calculated successfully")
     
             # Check if the music hash is a duplicate
             if check_duplicate_music(audio_hash):
@@ -254,6 +261,7 @@ class MusicGenerationService(AIModelService):
     
                 try:
                     uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
+                    print("Logging audio to wandb")
                     wandb.log({f"TTM prompt: {prompt[:100]} ....": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                     bt.logging.success(f"TTM Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and UID {uid_in_metagraph}")
                 except Exception as e:
