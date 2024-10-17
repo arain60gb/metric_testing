@@ -273,7 +273,7 @@ class MusicGenerationService(AIModelService):
                 duration = self.get_duration(output_path)
                 token = duration * 50.2
                 bt.logging.info(f"The duration of the audio file is {duration} seconds.")
-                score = self.score_output(output_path, prompt)
+                score = self.score_output(output_path, self.audio_path,prompt)
                 bt.logging.info(f"Score output after analysing the output file: {score}")
     
                 try:
@@ -318,7 +318,7 @@ class MusicGenerationService(AIModelService):
         """Evaluates and returns the score for the generated music output."""
         try:
             score_object = MusicQualityEvaluator()
-            return score_object.evaluate_music_quality(output_path, ,prompt)
+            return score_object.evaluate_music_quality(output_path, prompt)
         except Exception as e:
             bt.logging.error(f"Error scoring output: {e}")
             return 0.0
