@@ -450,6 +450,8 @@ class MusicGenerationService(AIModelService):
         load_hashes_to_cache()        
 
     def load_prompts(self):
+    # output_dir = "audio_files"  # Directory to save the audio files
+
         # Load the dataset (you can change this to any other dataset name)
         dataset = load_dataset("etechgrid/ttm-validation-dataset", split="train")  # Adjust the split if needed (train, test, etc.)
         random_index = random.randint(0, len(dataset) - 1)
@@ -461,7 +463,15 @@ class MusicGenerationService(AIModelService):
             print(f"{key}: {value}")
             bt.logging.info(f"🔊 This is the audio prompt: {value}")
         
-        # Checking if 'File_Path' is a dictionary containing 'array' and 'sampling_rate' keys
+        # Checking if the prompt exists in the dataset
+        if 'Prompt' in self.random_sample:
+            prompt = self.random_sample['Prompt']
+            bt.logging.info(f"Returning the prompt: {prompt}")
+        else:
+            print("'Prompt' not found in the sample.")
+            return None  # Return None if no prompt found
+
+        # Check if audio data exists and save it
         if 'File_Path' in self.random_sample and isinstance(self.random_sample['File_Path'], dict):
             file_path = self.random_sample['File_Path']
             if 'array' in file_path and 'sampling_rate' in file_path:
@@ -470,17 +480,19 @@ class MusicGenerationService(AIModelService):
 
                 # Save the audio to a file
                 os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
-                audio_path = os.path.join(output_dir, "random_sample.wav")
+                audio_path = os.path.join(output_dir, f"random_sample_{random_index}.wav")
                 sf.write(audio_path, audio_array, sample_rate)
                 print(f"Audio saved at: {audio_path}")
-
-                return value
+                bt.logging.info(f"Audio saved successfully at: {audio_path}")
             else:
                 print("Invalid audio data in 'File_Path'. Expected 'array' and 'sampling_rate'.")
                 return None
         else:
             print("'File_Path' not found or invalid format in the sample.")
             return None
+        
+        return prompt  # Return the prompt after saving the audio file
+
     
     async def run_async(self):
         step = 0
