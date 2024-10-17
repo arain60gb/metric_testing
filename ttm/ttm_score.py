@@ -223,29 +223,32 @@ class MetricEvaluator:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="music_audioset_epoch_15_esc_90.14.pt")
             clap_metric = CLAPTextConsistencyMetric(pt_file, model_arch='HTSAT-base').to(device)
-
+    
             def convert_audio(audio, from_rate, to_rate, to_channels):
                 resampler = torchaudio.transforms.Resample(orig_freq=from_rate, new_freq=to_rate)
                 audio = resampler(audio)
                 if to_channels == 1:
                     audio = audio.mean(dim=0, keepdim=True)
                 return audio
-
-            # Get the single audio file path in the directory
-            file_name = next((f for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))), None)
-            if file_name is None:
-                raise FileNotFoundError("No audio file found in the directory.")
-
-            file_path = os.path.join(generated_audio_dir, file_name)
-
+    
+            # Check if generated_audio_dir is a file or directory
+            if os.path.isfile(generated_audio_dir):
+                file_path = generated_audio_dir
+            else:
+                # Get the single audio file path in the directory
+                file_name = next((f for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))), None)
+                if file_name is None:
+                    raise FileNotFoundError("No audio file found in the directory.")
+                file_path = os.path.join(generated_audio_dir, file_name)
+    
             # Load and process the audio
             audio, sr = torchaudio.load(file_path)
             audio = convert_audio(audio, from_rate=sr, to_rate=sr, to_channels=1)
-
+    
             # Calculate consistency score
             clap_metric.update(audio.unsqueeze(0), [text], torch.tensor([audio.shape[1]]), torch.tensor([sr]))
             consistency_score = clap_metric.compute()
-
+    
             return consistency_score
         except Exception as e:
             print(f"An error occurred while calculating music consistency score: {e}")
