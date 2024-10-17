@@ -314,11 +314,11 @@ class MusicGenerationService(AIModelService):
                 return score * multiplier
         return score
 
-    def score_output(self, output_path, prompt):
+    def score_output(self, output_path, target_audio , prompt):
         """Evaluates and returns the score for the generated music output."""
         try:
             score_object = MusicQualityEvaluator()
-            return score_object.evaluate_music_quality(output_path, prompt)
+            return score_object.evaluate_music_quality(output_path, target_audio, prompt)
         except Exception as e:
             bt.logging.error(f"Error scoring output: {e}")
             return 0.0
