@@ -95,8 +95,11 @@ class MusicGenerationService(AIModelService):
                     audio_hash = hashlib.sha256(audio_data.numpy().tobytes()).hexdigest()
                     # Check if the music hash is a duplicate
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    save_hash_to_file(audio_hash, timestamp)
-                    bt.logging.info(f"Music hash processed and saved successfully for miner: {axon.hotkey}")                    
+                    try:
+                        save_hash_to_file(audio_hash, timestamp)
+                        bt.logging.info(f"Music hash processed and saved successfully for Validator")
+                    except Exception as e:
+                        bt.logging.error(f"Error saving audio hash: {e}")                   
 
                 except Exception as e:
                     bt.logging.error(f"Error saving audio file: {e}")
