@@ -203,55 +203,66 @@ class MusicGenerationService(AIModelService):
         except Exception as e:
             bt.logging.error(f'An error occurred while handling speech output: {e}')
 
+        import sys
+    print(f"Python executable: {sys.executable}")
+    
+    try:
+        import numpy as np
+        print("Numpy imported successfully")
+    except ImportError as e:
+        print(f"Error importing numpy: {e}")
+    
+    import torch
+    import torchaudio
+    import os
+    import hashlib
+    from datetime import datetime
+    import wandb
+    
     def handle_music_output(self, axon, music_output, prompt, model_name):
         try:
             # Convert the list to a tensor
             speech_tensor = torch.Tensor(music_output)
             # Normalize the speech data
             audio_data = speech_tensor / torch.max(torch.abs(speech_tensor))
-
+    
             # Convert to 32-bit PCM
             audio_data_int_ = (audio_data * 2147483647).type(torch.IntTensor)
-
+    
             # Add an extra dimension to make it a 2D tensor
             audio_data_int = audio_data_int_.unsqueeze(0)
-
+    
             # Save the audio data as a .wav file
-            # After saving the audio file
             output_path = os.path.join('/tmp', f'output_music_{axon.hotkey}.wav')
             sampling_rate = 32000
             torchaudio.save(output_path, src=audio_data_int, sample_rate=sampling_rate)
             bt.logging.info(f"Saved audio file to {output_path}")
-
+    
             # Calculate the audio hash
             audio_hash = hashlib.sha256(audio_data.numpy().tobytes()).hexdigest()
-
+    
             # Check if the music hash is a duplicate
             if check_duplicate_music(audio_hash):
-                # Log the duplicate detection and punish the miner
                 bt.logging.info(f"Duplicate music detected from miner: {axon.hotkey}. Issuing punishment.")
                 self.punish(axon, service="Text-To-Music", punish_message="Duplicate music detected")
             else:
-                # No duplicate detected, save the hash and process the music
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 save_hash_to_file(audio_hash, axon.hotkey, timestamp)
                 bt.logging.info(f"Music hash processed and saved successfully for miner: {axon.hotkey}")
-
+    
                 try:
                     uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
                     wandb.log({f"TTM prompt: {prompt[:100]} ....": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                     bt.logging.success(f"TTM Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and UID {uid_in_metagraph}")
                 except Exception as e:
                     bt.logging.error(f"Error uploading TTM audio file to wandb: {e}")
-
-                # Calculate the duration
+    
                 duration = self.get_duration(output_path)
                 token = duration * 50.2
                 bt.logging.info(f"The duration of the audio file is {duration} seconds.")
-                # Score the output and update the weights
                 score = self.score_output(output_path, prompt)
                 bt.logging.info(f"Score output after analysing the output file: {score}")
-                
+    
                 try:
                     if duration < 15:
                         score = self.score_adjustment(score, duration)
@@ -260,14 +271,13 @@ class MusicGenerationService(AIModelService):
                         bt.logging.info(f"Duration is greater than 15 seconds. No need to penalize the score.")
                 except Exception as e:
                     bt.logging.error(f"Error in penalizing the score: {e}")
-                
+    
                 bt.logging.info(f"Aggregated Score from Smoothness, SNR and Consistancy Metric: {score}")
                 self.update_score(axon, score, service="Text-To-Music")
                 return output_path
-
+    
         except Exception as e:
             bt.logging.error(f"Error processing Music output: {e}")
-
 
     def get_duration(self, wav_file_path):
         """Returns the duration of the audio file in seconds."""
