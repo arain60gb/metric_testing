@@ -206,11 +206,7 @@ class MusicGenerationService(AIModelService):
         import sys
     print(f"Python executable: {sys.executable}")
     
-    try:
-        import numpy as np
-        print("Numpy imported successfully")
-    except ImportError as e:
-        print(f"Error importing numpy: {e}")
+
     
     import torch
     import torchaudio
@@ -220,6 +216,12 @@ class MusicGenerationService(AIModelService):
     import wandb
     
     def handle_music_output(self, axon, music_output, prompt, model_name):
+
+        try:
+            import numpy as np
+            print("Numpy imported successfully")
+        except ImportError as e:
+            print(f"Error importing numpy: {e}")
         try:
             # Convert the list to a tensor
             speech_tensor = torch.Tensor(music_output)
