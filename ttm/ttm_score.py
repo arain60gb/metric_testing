@@ -142,7 +142,6 @@ import os  # Import the os module
 
 class MetricEvaluator:
     @staticmethod
-    @staticmethod
     def calculate_kld(generated_audio_dir, target_audio_dir):
         # Sampling rate of your audio data
         orig_sampling_rate = 32000
@@ -235,8 +234,12 @@ class MetricEvaluator:
             recalculate=True                 # Set to True if you want to recalculate embeddings
         )
     
-        # Extract the FAD score from the dictionary
-        fad_value = fad_score['frechet_audio_distance']
+        # Ensure fad_score is a dictionary
+        if isinstance(fad_score, dict):
+            # Extract the FAD score from the dictionary
+            fad_value = fad_score.get('frechet_audio_distance', 0)
+        else:
+            fad_value = 0
     
         # Clamp the value to 0 if it's negative
         fad = max(0, fad_value)
