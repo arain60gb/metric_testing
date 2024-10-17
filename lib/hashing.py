@@ -21,7 +21,7 @@ def load_hashes_to_cache():
             for entry in data:
                 cache.add(entry['hash'])  # Add hash to in-memory cache
 
-def save_hash_to_file(hash_value: str, miner_id: str, timestamp: str):
+def save_hash_to_file(hash_value: str = None, miner_id: str = None, timestamp: str = None):
     """Save the new hash to the JSON file and in-memory cache."""
     cache.add(hash_value)  # Add to cache for fast lookups
     if os.path.exists(hashes_file):

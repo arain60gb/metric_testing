@@ -41,6 +41,7 @@ class MusicGenerationService(AIModelService):
         self.combinations = []
         self.duration = None
         self.lock = asyncio.Lock()
+        self.audio_path = None
 
         # Load hashes from file to cache at startup
         load_hashes_to_cache()        
@@ -50,7 +51,7 @@ class MusicGenerationService(AIModelService):
     #     self.prompts = gs_dev['train']['text']
     #     return self.prompts
 
-    def load_prompts(self):
+    def load_prompts(self,axon.hotkey = None):
     # output_dir = "audio_files"  # Directory to save the audio files
 
         # Load the dataset (you can change this to any other dataset name)
@@ -82,9 +83,24 @@ class MusicGenerationService(AIModelService):
                 # Save the audio to a file
                 os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
                 audio_path = os.path.join(output_dir, f"random_sample_{random_index}.wav")
-                sf.write(audio_path, audio_array, sample_rate)
-                print(f"Audio saved at: {audio_path}")
-                bt.logging.info(f"Audio saved successfully at: {audio_path}")
+                
+                try:
+                    sf.write(audio_path, audio_array, sample_rate)
+                    bt.logging.info(f"Audio saved successfully at: {audio_path}")
+                    self.audio_path = audio_path
+                    # Convert the list to a tensor
+                    speech_tensor = torch.Tensor(self.audio_path )
+                    # Normalize the speech data
+                    audio_data = speech_tensor / torch.max(torch.abs(speech_tensor))
+                    audio_hash = hashlib.sha256(audio_data.numpy().tobytes()).hexdigest()
+                    # Check if the music hash is a duplicate
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    axon.hotkey = None
+                    save_hash_to_file(audio_hash, axon.hotkey, timestamp)
+                    bt.logging.info(f"Music hash processed and saved successfully for miner: {axon.hotkey}")                    
+
+                except Exception as e:
+                    bt.logging.error(f"Error saving audio file: {e}")
             else:
                 print("Invalid audio data in 'File_Path'. Expected 'array' and 'sampling_rate'.")
                 return None
@@ -212,44 +228,31 @@ class MusicGenerationService(AIModelService):
         try:
             import numpy as np
             import wandb
-            print(f"Python executable: {sys.executable}")
-            print("Numpy imported successfully")
         except ImportError as e:
-            print(f"Python executable: {sys.executable}")
             print(f"Error importing numpy or wandb: {e}")
+            return
     
         try:
             # Convert the list to a tensor
-            print("Converting music_output to tensor")
             speech_tensor = torch.Tensor(music_output)
-            print("Tensor conversion successful")
     
             # Normalize the speech data
-            print("Normalizing the speech data")
             audio_data = speech_tensor / torch.max(torch.abs(speech_tensor))
-            print("Normalization successful")
     
             # Convert to 32-bit PCM
-            print("Converting to 32-bit PCM")
             audio_data_int_ = (audio_data * 2147483647).type(torch.IntTensor)
-            print("Conversion to 32-bit PCM successful")
     
             # Add an extra dimension to make it a 2D tensor
-            print("Adding extra dimension to tensor")
             audio_data_int = audio_data_int_.unsqueeze(0)
-            print("Extra dimension added successfully")
     
             # Save the audio data as a .wav file
             output_path = os.path.join('/tmp', f'output_music_{axon.hotkey}.wav')
             sampling_rate = 32000
-            print(f"Saving audio data to {output_path}")
             torchaudio.save(output_path, src=audio_data_int, sample_rate=sampling_rate)
             bt.logging.info(f"Saved audio file to {output_path}")
     
             # Calculate the audio hash
-            print("Calculating audio hash")
             audio_hash = hashlib.sha256(audio_data.numpy().tobytes()).hexdigest()
-            print("Audio hash calculated successfully")
     
             # Check if the music hash is a duplicate
             if check_duplicate_music(audio_hash):
@@ -262,12 +265,7 @@ class MusicGenerationService(AIModelService):
     
                 try:
                     uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
-                    print("Logging audio to wandb")
-                    print(f"audio_data_int_ shape: {audio_data_int_.shape}")
-                    print(f"audio_data_int_ dtype: {audio_data_int_.dtype}")
                     audio_data_np = np.array(audio_data_int_)
-                    print(f"audio_data_np shape: {audio_data_np.shape}")
-                    print(f"audio_data_np dtype: {audio_data_np.dtype}")
                     wandb.log({f"TTM prompt: {prompt[:100]} ....": wandb.Audio(audio_data_np, caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                     bt.logging.success(f"TTM Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and UID {uid_in_metagraph}")
                 except Exception as e:
@@ -321,7 +319,7 @@ class MusicGenerationService(AIModelService):
         """Evaluates and returns the score for the generated music output."""
         try:
             score_object = MusicQualityEvaluator()
-            return score_object.evaluate_music_quality(output_path, prompt)
+            return score_object.evaluate_music_quality(output_path, ,prompt)
         except Exception as e:
             bt.logging.error(f"Error scoring output: {e}")
             return 0.0
@@ -340,7 +338,7 @@ class MusicGenerationService(AIModelService):
     #         bt.logging.info(f"Current Combination for TTM: {current_combination}")
     #         filtered_axons = [self.metagraph.axons[i] for i in current_combination]
 
-        return filtered_axons
+        # return filtered_axons
     
     def get_filtered_axons_from_combinations(self):
         if not self.combinations:
