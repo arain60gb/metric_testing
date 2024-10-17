@@ -142,25 +142,38 @@ import os  # Import the os module
 
 class MetricEvaluator:
     @staticmethod
+    @staticmethod
     def calculate_kld(generated_audio_dir, target_audio_dir):
         # Sampling rate of your audio data
         orig_sampling_rate = 32000
-
+    
+        # Check if generated_audio_dir is a file or directory
+        if os.path.isfile(generated_audio_dir):
+            generated_files = [generated_audio_dir]
+        else:
+            generated_files = [os.path.join(generated_audio_dir, f) for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))]
+    
+        # Check if target_audio_dir is a file or directory
+        if os.path.isfile(target_audio_dir):
+            target_files = [target_audio_dir]
+        else:
+            target_files = [os.path.join(target_audio_dir, f) for f in os.listdir(target_audio_dir) if os.path.isfile(os.path.join(target_audio_dir, f))]
+    
         # Initialize datasets
-        generated_dataset = WaveDataset(generated_audio_dir, orig_sampling_rate)
-        target_dataset = WaveDataset(target_audio_dir, orig_sampling_rate)
-
+        generated_dataset = WaveDataset(generated_files, orig_sampling_rate)
+        target_dataset = WaveDataset(target_files, orig_sampling_rate)
+    
         # Use DataLoader to handle batching
         generated_loader = DataLoader(generated_dataset, batch_size=1, shuffle=False)
         target_loader = DataLoader(target_dataset, batch_size=1, shuffle=False)
-
+    
         # Load pre-trained Wav2Vec2 model and processor (MERT or any suitable model)
         model = AutoModel.from_pretrained("m-a-p/MERT-v1-95M", trust_remote_code=True)
         processor = Wav2Vec2FeatureExtractor.from_pretrained("m-a-p/MERT-v1-95M", trust_remote_code=True)
-
+    
         # Define resampler to match the model's expected sampling rate (24kHz)
         resampler = torchaudio.transforms.Resample(orig_freq=orig_sampling_rate, new_freq=24000)
-
+    
         # Function to extract features from the audio
         def extract_features(loader, model, processor, resampler):
             features_dict = {"hidden_states": [], "file_path_": []}  # Initialize with keys for the feature type (hidden_states)
@@ -169,28 +182,28 @@ class MetricEvaluator:
                 audio = resampler(audio)
                 audio = audio.squeeze(0)  # Remove batch dimension
                 audio = audio.numpy()  # Convert to NumPy array
-
+    
                 # Process and extract features
                 inputs = processor(audio, sampling_rate=24000, return_tensors="pt")
-
+    
                 # Pass the processed inputs to the model
                 outputs = model(**inputs, output_hidden_states=True)
-
+    
                 # Use the last hidden state for comparison
                 hidden_states = outputs.hidden_states[-1].mean(dim=1)  # Average over the time dimension
-
+    
                 # Store features (hidden states) and filenames
                 features_dict["hidden_states"].append(hidden_states.squeeze(0))  # Assuming batch size of 1
-
+    
                 # Unpack the filename tuple and store as string
                 features_dict["file_path_"].append(filename[0])  # Store the filename as a string
-
+    
             return features_dict
-
+    
         # Extract features for both generated and target audio
         generated_features = extract_features(generated_loader, model, processor, resampler)
         target_features = extract_features(target_loader, model, processor, resampler)
-
+    
         # Calculate KLD using the feature layer name as "hidden_states"
         kl_metrics, _, _ = calculate_kl(generated_features, target_features, feat_layer_name="hidden_states", same_name=True)
         kld = max(0, kl_metrics["kullback_leibler_divergence_sigmoid"])
@@ -198,21 +211,33 @@ class MetricEvaluator:
 
     @staticmethod
     def calculate_fad(generated_audio_dir, target_audio_dir):
+        # Check if generated_audio_dir is a file or directory
+        if os.path.isfile(generated_audio_dir):
+            generated_files = [generated_audio_dir]
+        else:
+            generated_files = [os.path.join(generated_audio_dir, f) for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))]
+    
+        # Check if target_audio_dir is a file or directory
+        if os.path.isfile(target_audio_dir):
+            target_files = [target_audio_dir]
+        else:
+            target_files = [os.path.join(target_audio_dir, f) for f in os.listdir(target_audio_dir) if os.path.isfile(os.path.join(target_audio_dir, f))]
+    
         # Initialize the Frechet Audio Distance calculator
         fad_calculator = FrechetAudioDistance()
-
+    
         # Calculate the FAD score between the two directories
         fad_score = fad_calculator.score(
-            background_dir=generated_audio_dir,  # Generated audio directory
-            eval_dir=target_audio_dir,           # Target audio directory
-            store_embds=False,                   # Set to True if you want to store embeddings for later reuse
-            limit_num=None,                      # Limit the number of files to process, None means no limit
-            recalculate=True                     # Set to True if you want to recalculate embeddings
+            background_dir=generated_files,  # Generated audio directory
+            eval_dir=target_files,           # Target audio directory
+            store_embds=False,               # Set to True if you want to store embeddings for later reuse
+            limit_num=None,                  # Limit the number of files to process, None means no limit
+            recalculate=True                 # Set to True if you want to recalculate embeddings
         )
-
+    
         # Extract the FAD score from the dictionary
         fad_value = fad_score['frechet_audio_distance']
-
+    
         # Clamp the value to 0 if it's negative
         fad = max(0, fad_value)
         return fad
