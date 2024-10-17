@@ -85,22 +85,29 @@ class MusicGenerationService(AIModelService):
                 audio_path = os.path.join(output_dir, f"random_sample_{random_index}.wav")
                 
                 try:
+                    # Save the audio data using soundfile
                     sf.write(audio_path, audio_array, sample_rate)
                     bt.logging.info(f"Audio saved successfully at: {audio_path}")
                     self.audio_path = audio_path
-                    # Convert the list to a tensor
-                    speech_tensor = torch.Tensor(self.audio_path )
+                
+                    # Read the audio file into a numerical array
+                    audio_data, sample_rate = sf.read(self.audio_path)
+                    
+                    # Convert the numerical array to a tensor
+                    speech_tensor = torch.Tensor(audio_data)
+                    
                     # Normalize the speech data
                     audio_data = speech_tensor / torch.max(torch.abs(speech_tensor))
                     audio_hash = hashlib.sha256(audio_data.numpy().tobytes()).hexdigest()
+                    
                     # Check if the music hash is a duplicate
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     try:
                         save_hash_to_file(audio_hash, timestamp)
                         bt.logging.info(f"Music hash processed and saved successfully for Validator")
                     except Exception as e:
-                        bt.logging.error(f"Error saving audio hash: {e}")                   
-
+                        bt.logging.error(f"Error saving audio hash: {e}")
+                
                 except Exception as e:
                     bt.logging.error(f"Error saving audio file: {e}")
             else:
