@@ -146,8 +146,8 @@ class MetricEvaluator:
       print(f"Calculating KLD score between ............ {generated_audio_dir} and {target_audio_dir}...")
 
       # Initialize datasets
-      generated_dataset = WaveDataset(generated_audio_dir, orig_sampling_rate)
-      target_dataset = WaveDataset(target_audio_dir, orig_sampling_rate)
+      generated_dataset = WaveDataset("/tmp", orig_sampling_rate)
+      target_dataset = WaveDataset("/root/metric_testing/audio_files", orig_sampling_rate)
 
       # Use DataLoader to handle batching
       generated_loader = DataLoader(generated_dataset, batch_size=1, shuffle=False)
