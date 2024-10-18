@@ -291,7 +291,8 @@ class MusicGenerationService(AIModelService):
                 bt.logging.info(f"The is audio_path file is {self.audio_path}.")
 
 
-                score = self.score_output(output_path, self.audio_path,prompt)
+                # score = self.score_output(output_path, self.audio_path,prompt)
+                score = self.score_output("/tmp/music/", output_dir,prompt)
                 bt.logging.info(f"Score output after analysing the output file: {score}")
     
                 try:
