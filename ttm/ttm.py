@@ -286,6 +286,10 @@ class MusicGenerationService(AIModelService):
                 duration = self.get_duration(output_path)
                 token = duration * 50.2
                 bt.logging.info(f"The duration of the audio file is {duration} seconds.")
+                bt.logging.info(f"The is is output_path file is {output_path}.")
+                bt.logging.info(f"The is audio_path file is {self.audio_path}.")
+
+
                 score = self.score_output(output_path, self.audio_path,prompt)
                 bt.logging.info(f"Score output after analysing the output file: {score}")
     
@@ -327,24 +331,16 @@ class MusicGenerationService(AIModelService):
                 return score * multiplier
         return score
 
-    # def score_output(self, output_path, target_audio , prompt):
-    #     """Evaluates and returns the score for the generated music output."""
-    #     try:
-    #         score_object = MusicQualityEvaluator()
-    #         # generated_audio_dir = "/tmp/music", target_audio_dir="/root/metric_testing/audio_files"
-    #         return score_object.evaluate_music_quality(output_path = "/tmp/music", target_audio = "/root/metric_testing/audio_files", prompt)
-    #     except Exception as e:
-    #         bt.logging.error(f"Error scoring output: {e}")
-    #         return 0.0
-    def score_output(self, output_path, target_audio, prompt):
+    def score_output(self, output_path, target_audio , prompt):
         """Evaluates and returns the score for the generated music output."""
         try:
             score_object = MusicQualityEvaluator()
-            # Use the arguments passed into the function
-            return score_object.evaluate_music_quality(output_path=output_path, target_audio=target_audio, prompt=prompt)
+            # generated_audio_dir = "/tmp/music", target_audio_dir="/root/metric_testing/audio_files"
+            return score_object.evaluate_music_quality(output_path, target_audio, prompt)
         except Exception as e:
             bt.logging.error(f"Error scoring output: {e}")
             return 0.0
+
 
     # def get_filtered_axons_from_combinations(self):
     #     if not self.combinations:
