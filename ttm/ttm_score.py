@@ -203,8 +203,8 @@ class MetricEvaluator:
 
       # Calculate the FAD score between the two directories
       fad_score = fad_calculator.score(
-          background_dir=generated_audio_dir,  # Generated audio directory
-          eval_dir=target_audio_dir,           # Target audio directory
+          background_dir='"/tmp/music"',  # Generated audio directory
+          eval_dir="/root/metric_testing/audio_files",           # Target audio directory
           store_embds=False,                   # Set to True if you want to store embeddings for later reuse
           limit_num=None,                      # Limit the number of files to process, None means no limit
           recalculate=True                     # Set to True if you want to recalculate embeddings
