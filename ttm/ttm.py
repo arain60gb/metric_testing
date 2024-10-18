@@ -82,7 +82,7 @@ class MusicGenerationService(AIModelService):
 
                 # Save the audio to a file
                 os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
-                audio_path = os.path.join(output_dir, f"random_sample_{random_index}.wav")
+                audio_path = os.path.join(output_dir, "random_sample.wav")
                 
                 try:
                     # Save the audio data using soundfile
