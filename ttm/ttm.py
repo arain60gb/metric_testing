@@ -253,9 +253,12 @@ class MusicGenerationService(AIModelService):
     
             # Add an extra dimension to make it a 2D tensor
             audio_data_int = audio_data_int_.unsqueeze(0)
+            # get the .wav file from the path self.audio_path
+            file_name = os.path.basename(self.audio_path)
     
             # Save the audio data as a .wav file
-            output_path = os.path.join('/tmp/music/', f'output_music_{axon.hotkey}.wav')
+
+            output_path = os.path.join('/tmp/music/', file_name)
             sampling_rate = 32000
             torchaudio.save(output_path, src=audio_data_int, sample_rate=sampling_rate)
             bt.logging.info(f"Saved audio file to {output_path}")
