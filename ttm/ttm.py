@@ -27,7 +27,7 @@ audio_subnet_path = os.path.abspath(project_root)
 sys.path.insert(0, project_root)
 sys.path.insert(0, audio_subnet_path)
 
-output_dir = "audio_files"
+output_dir = "/root/metric_testing/audio_files"
 class MusicGenerationService(AIModelService):
     def __init__(self):
         super().__init__()  
