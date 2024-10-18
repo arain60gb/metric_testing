@@ -148,13 +148,29 @@ class MetricEvaluator:
             generate = next((f for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))), None)
             target = next((f for f in os.listdir(target_audio_dir) if os.path.isfile(os.path.join(target_audio_dir, f))), None)
 
+            if generate is None or target is None:
+                bt.logging.error("Generated or target audio file not found.")
+                return None
+
             # Load your predicted and target audio files
             target_waveform, target_sr = torchaudio.load(os.path.join(target_audio_dir, target))
             generated_waveform, generated_sr = torchaudio.load(os.path.join(generated_audio_dir, generate))
 
             # Log waveform and sample rate info
-            bt.logging.info(f"Target waveform size: {target_waveform.shape}, Sample rate: {target_sr}")
-            bt.logging.info(f"Generated waveform size: {generated_waveform.shape}, Sample rate: {generated_sr}")
+            bt.logging.info(f"Target waveform size: {target_waveform.shape}, Sample rate: {target_sr}, dtype: {target_waveform.dtype}")
+            bt.logging.info(f"Generated waveform size: {generated_waveform.shape}, Sample rate: {generated_sr}, dtype: {generated_waveform.dtype}")
+
+            # Ensure sample rates match
+            if target_sr != generated_sr:
+                bt.logging.info(f"Sample rates differ. Resampling generated waveform from {generated_sr} to {target_sr}.")
+                resampler = torchaudio.transforms.Resample(orig_freq=generated_sr, new_freq=target_sr)
+                generated_waveform = resampler(generated_waveform)
+                generated_sr = target_sr
+
+            # Truncate or pad waveforms to match lengths
+            min_length = min(target_waveform.shape[-1], generated_waveform.shape[-1])
+            target_waveform = target_waveform[..., :min_length]
+            generated_waveform = generated_waveform[..., :min_length]
 
             # Ensure that the audio tensors are in the shape [batch_size, channels, length]
             target_waveform = target_waveform.unsqueeze(0)  # Adding batch dimension
@@ -165,8 +181,17 @@ class MetricEvaluator:
 
             # The sample rates
             sample_rates = torch.tensor([target_sr])  # Use just one sample rate as they should match
+
             # Initialize the PasstKLDivergenceMetric
             kld_metric = PasstKLDivergenceMetric()
+
+            # Move tensors to the appropriate device if needed
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            target_waveform = target_waveform.to(device)
+            generated_waveform = generated_waveform.to(device)
+            sizes = sizes.to(device)
+            sample_rates = sample_rates.to(device)
+            kld_metric = kld_metric.to(device)
 
             # Update the metric
             kld_metric.update(preds=generated_waveform, targets=target_waveform, sizes=sizes, sample_rates=sample_rates)
@@ -176,8 +201,11 @@ class MetricEvaluator:
             return kld['kld_both']
 
         except Exception as e:
-            bt.logging.error(f"Error during KLD calculation: {e}")
+            import traceback
+            traceback_str = traceback.format_exc()
+            bt.logging.error(f"Error during KLD calculation: {e}\n{traceback_str}")
             return None
+
 
     @staticmethod
     def calculate_fad(generated_audio_dir, target_audio_dir):
