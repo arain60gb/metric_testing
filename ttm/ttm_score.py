@@ -142,7 +142,7 @@ from audiocraft.metrics import PasstKLDivergenceMetric
 
 class MetricEvaluator:
     @staticmethod
-    def calculate_kld(generated_audio_dir = "/tmp/music", target_audio_dir="/root/metric_testing/audio_files"):
+    def calculate_kld(generated_audio_dir, target_audio_dir):
       # Get the single audio file path in the directory
       generate = next((f for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))), None)
       target = next((f for f in os.listdir(target_audio_dir) if os.path.isfile(os.path.join(target_audio_dir, f))), None)
@@ -170,7 +170,7 @@ class MetricEvaluator:
       return kld['kld_both']
 
     @staticmethod
-    def calculate_fad(generated_audio_dir = "/tmp/music", target_audio_dir="/root/metric_testing/audio_files"):
+    def calculate_fad(generated_audio_dir, target_audio_dir):
       # Initialize the Frechet Audio Distance calculator
       fad_calculator = FrechetAudioDistance()
 
@@ -191,7 +191,7 @@ class MetricEvaluator:
       return fad
 
     @staticmethod
-    def calculate_consistency(text, generated_audio_dir = "/tmp/music"):
+    def calculate_consistency(generated_audio_dir, text):
         try:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="music_audioset_epoch_15_esc_90.14.pt")
