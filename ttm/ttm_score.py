@@ -143,6 +143,7 @@ class MetricEvaluator:
     def calculate_kld(generated_audio_dir, target_audio_dir):
         # Sampling rate of your audio data
         orig_sampling_rate = 32000
+        print(f"Calculating KLD score between ............ {generated_audio_dir} and {target_audio_dir}...")
     
         # Check if generated_audio_dir is a file or directory
         if os.path.isfile(generated_audio_dir):
@@ -209,6 +210,7 @@ class MetricEvaluator:
     @staticmethod
     def calculate_fad(generated_audio_dir, target_audio_dir):
         # Check if generated_audio_dir is a file or directory
+        print(f"Calculating FAD score between ............ {generated_audio_dir} and {target_audio_dir}...")
         if os.path.isfile(generated_audio_dir):
             generated_files = [generated_audio_dir]
         else:
