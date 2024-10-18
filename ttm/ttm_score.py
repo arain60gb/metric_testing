@@ -143,32 +143,41 @@ from audiocraft.metrics import PasstKLDivergenceMetric
 class MetricEvaluator:
     @staticmethod
     def calculate_kld(generated_audio_dir, target_audio_dir):
-      # Get the single audio file path in the directory
-      generate = next((f for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))), None)
-      target = next((f for f in os.listdir(target_audio_dir) if os.path.isfile(os.path.join(target_audio_dir, f))), None)
-      # Load your predicted and target audio files
-      target_waveform, target_sr = torchaudio.load(os.path.join(target_audio_dir, target))
-      generated_waveform, generated_sr = torchaudio.load(os.path.join(generated_audio_dir, generate))
+        try:
+            # Get the single audio file path in the directory
+            generate = next((f for f in os.listdir(generated_audio_dir) if os.path.isfile(os.path.join(generated_audio_dir, f))), None)
+            target = next((f for f in os.listdir(target_audio_dir) if os.path.isfile(os.path.join(target_audio_dir, f))), None)
 
-      # Ensure that the audio tensors are in the shape [batch_size, channels, length]
-      target_waveform = target_waveform.unsqueeze(0)  # Adding batch dimension
-      generated_waveform = generated_waveform.unsqueeze(0)      # Adding batch dimension
+            # Load your predicted and target audio files
+            target_waveform, target_sr = torchaudio.load(os.path.join(target_audio_dir, target))
+            generated_waveform, generated_sr = torchaudio.load(os.path.join(generated_audio_dir, generate))
 
-      # The sizes of the waveform
-      sizes = torch.tensor([target_waveform.shape[-1]])
-      print("This is the size of wavefrom", sizes)
+            # Log waveform and sample rate info
+            bt.logging.info(f"Target waveform size: {target_waveform.shape}, Sample rate: {target_sr}")
+            bt.logging.info(f"Generated waveform size: {generated_waveform.shape}, Sample rate: {generated_sr}")
 
-      # The sample rates
-      sample_rates = torch.tensor([target_sr])  # Use just one sample rate as they should match
-      # Initialize the PasstKLDivergenceMetric
-      kld_metric = PasstKLDivergenceMetric()
+            # Ensure that the audio tensors are in the shape [batch_size, channels, length]
+            target_waveform = target_waveform.unsqueeze(0)  # Adding batch dimension
+            generated_waveform = generated_waveform.unsqueeze(0)  # Adding batch dimension
 
-      # Update the metric
-      kld_metric.update(preds=generated_waveform, targets=target_waveform, sizes=sizes, sample_rates=sample_rates)
+            # The sizes of the waveform
+            sizes = torch.tensor([target_waveform.shape[-1]])
 
-      # Compute the PasstKLDivergenceMetric score
-      kld = kld_metric.compute()
-      return kld['kld_both']
+            # The sample rates
+            sample_rates = torch.tensor([target_sr])  # Use just one sample rate as they should match
+            # Initialize the PasstKLDivergenceMetric
+            kld_metric = PasstKLDivergenceMetric()
+
+            # Update the metric
+            kld_metric.update(preds=generated_waveform, targets=target_waveform, sizes=sizes, sample_rates=sample_rates)
+
+            # Compute the PasstKLDivergenceMetric score
+            kld = kld_metric.compute()
+            return kld['kld_both']
+
+        except Exception as e:
+            bt.logging.error(f"Error during KLD calculation: {e}")
+            return None
 
     @staticmethod
     def calculate_fad(generated_audio_dir, target_audio_dir):
