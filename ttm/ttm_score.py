@@ -273,7 +273,7 @@ class Aggregator:
       return product ** (1.0 / len(scores))
 
 class MusicQualityEvaluator:
-    def _init_(self):
+    def __init__(self):
       self.metric_evaluator = MetricEvaluator()
       self.normalizer = Normalizer()
       self.aggregator = Aggregator()
