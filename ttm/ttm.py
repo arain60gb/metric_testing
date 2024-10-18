@@ -255,6 +255,7 @@ class MusicGenerationService(AIModelService):
             audio_data_int = audio_data_int_.unsqueeze(0)
             # get the .wav file from the path self.audio_path
             file_name = os.path.basename(self.audio_path)
+            bt.logging.info(f"Saving audio file to ================= {file_name}")
     
             # Save the audio data as a .wav file
 
