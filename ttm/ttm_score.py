@@ -279,6 +279,10 @@ class MusicQualityEvaluator:
       self.aggregator = Aggregator()
 
     def evaluate_music_quality(self, generated_audio_dir, target_audio_dir, text=None):
+      bt.logging.info(f'This  is the generate audio path: {generated_audio_dir}')
+      bt.logging.info(f'This  is the target audio path: {target_audio_dir}')
+      bt.logging.info(f'This  is the prompt: {text}')
+
       try:
           kld_score = self.metric_evaluator.calculate_kld(generated_audio_dir, target_audio_dir)
           bt.logging.info(f'.......KLD......: {kld_score}')
