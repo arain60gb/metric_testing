@@ -255,7 +255,7 @@ class MusicGenerationService(AIModelService):
             audio_data_int = audio_data_int_.unsqueeze(0)
     
             # Save the audio data as a .wav file
-            output_path = os.path.join('/tmp', f'output_music_{axon.hotkey}.wav')
+            output_path = os.path.join('/tmp/music/', f'output_music_{axon.hotkey}.wav')
             sampling_rate = 32000
             torchaudio.save(output_path, src=audio_data_int, sample_rate=sampling_rate)
             bt.logging.info(f"Saved audio file to {output_path}")
