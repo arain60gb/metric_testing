@@ -286,25 +286,31 @@ class MusicQualityEvaluator:
       try:
           kld_score = self.metric_evaluator.calculate_kld(generated_audio_dir, target_audio_dir)
           bt.logging.info(f'.......KLD......: {kld_score}')
-        #   bt.logging.info(f'.......KLD......: {kld_score}')
-      except:
-          bt.logging.error(f"Failed to calculate KLD")
+
+      except Exception as e:
+          bt.logging.error(f"Failed to calculate KLD: {e}")
+        
+    #   except:
+    #       bt.logging.error(f"Failed to calculate KLD")
 
       try:
           fad_score = self.metric_evaluator.calculate_fad(generated_audio_dir, target_audio_dir)
           bt.logging.info(f'.......FAD......: {fad_score}')
-        #   print(f'.......FAD......: {fad_score}')
-      except:
-        #   print(f"Failed to calculate FAD: {error}")
-          bt.logging.error(f"Failed to calculate FAD")
+
+      except Exception as e:
+          bt.logging.error(f"Failed to calculate FAD: {e}")
+    #   except:
+    #     #   print(f"Failed to calculate FAD: {error}")
+    #       bt.logging.error(f"Failed to calculate FAD")
 
       try:
           consistency_score = self.metric_evaluator.calculate_consistency(generated_audio_dir, text)
           bt.logging.info(f'....... Consistency Score ......: {consistency_score}')
-        #   print(f'....... Consistency Score ......: {consistency_score}')
-      except:
-        #   print("Failed to calculate Consistency score")
-          bt.logging.error(f"Failed to calculate Consistency score")
+
+      except Exception as e:
+          bt.logging.error(f"Failed to calculate Consistency score: {e}")
+    #   except:
+    #       bt.logging.error(f"Failed to calculate Consistency score")
 
       # Normalize scores and calculate aggregate score
       normalized_kld = self.normalizer.normalize_kld(kld_score)

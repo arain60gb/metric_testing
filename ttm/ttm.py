@@ -332,7 +332,7 @@ class MusicGenerationService(AIModelService):
         try:
             score_object = MusicQualityEvaluator()
             # generated_audio_dir = "/tmp/music", target_audio_dir="/root/metric_testing/audio_files"
-            return score_object.evaluate_music_quality("/tmp/music/", "/root/metric_testing/audio_files/", prompt)
+            return score_object.evaluate_music_quality("/tmp/music", "/root/metric_testing/audio_files", prompt)
         except Exception as e:
             bt.logging.error(f"Error scoring output: {e}")
             return 0.0
